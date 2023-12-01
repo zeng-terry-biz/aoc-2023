@@ -1,4 +1,6 @@
 fun main() {
+    // PART 1
+
     fun String.getNumber() = first{it.isDigit()}.digitToInt() * 10 + last{it.isDigit()}.digitToInt()
 
     fun part1(input: List<String>): Int {
@@ -11,11 +13,21 @@ fun main() {
         return sum
     }
 
-    // test if implementation meets criteria from the description, like:
     var testInput = readInput("Day01_01test")
     check(part1(testInput) == 142)
 
+    // PART 2
+
     val strToInt= mapOf(
+        "1" to 1,
+        "2" to 2,
+        "3" to 3,
+        "4" to 4,
+        "5" to 5,
+        "6" to 6,
+        "7" to 7,
+        "8" to 8,
+        "9" to 9,
         "one" to 1,
         "two" to 2,
         "three" to 3,
@@ -28,23 +40,13 @@ fun main() {
     )
 
     fun getStrNumber(line: String) : Int{
-        val firstPos = line.indexOfFirst { it.isDigit() }
-        var firstNum = if(firstPos == -1) -1 else line[firstPos].digitToInt()
-
         val firstFound = line.findAnyOf(strToInt.keys)
-        if(firstFound != null && (firstNum == -1 || firstFound.first < firstPos)){
-                firstNum = strToInt[firstFound.second]!!
-        }
-
-        val lastPos = line.indexOfLast { it.isDigit() }
-        var lastNum = if(lastPos == -1) -1 else line[lastPos].digitToInt()
+        val firstNum = if(firstFound != null) strToInt[firstFound.second] else 0
 
         val lastFound = line.findLastAnyOf(strToInt.keys)
-        if(lastFound != null && (lastNum == -1 || lastFound.first > lastPos)){
-            lastNum = strToInt[lastFound.second]!!
-        }
+        val lastNum = if(lastFound != null) strToInt[lastFound.second] else 0
 
-        check(firstNum != -1 && lastNum != -1)
+        check(firstNum != null && lastNum != null)
         return firstNum * 10 + lastNum
     }
 
@@ -58,9 +60,10 @@ fun main() {
         return sum
     }
 
-    // test if implementation meets criteria from the description, like:
     testInput = readInput("Day01_02test")
     check(part2(testInput) == 281)
+
+    // PARTS RUN
 
     val input = readInput("Day01")
     part1(input).println()
