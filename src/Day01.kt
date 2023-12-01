@@ -1,4 +1,5 @@
 fun main() {
+
     // PART 1
 
     fun String.getNumber() = first{it.isDigit()}.digitToInt() * 10 + last{it.isDigit()}.digitToInt()
