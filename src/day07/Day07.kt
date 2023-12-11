@@ -41,7 +41,7 @@ class Part2(private val input: List<String>) {
     }
 }
 
-private enum class Card { None, J0, N2, N3, N4, N5, N6, N7, N8, N9, N10, J, Q, K, A }
+private enum class Card { None, Joker, N2, N3, N4, N5, N6, N7, N8, N9, N10, J, Q, K, A }
 private enum class HandType { HighCard, OnePair, TwoPair, ThreeOfKind, FullHouse, FourOfKind, FiveOfKind }
 
 private data class Hand(private val repString: String, val bid: Int, val jAsJoker: Boolean = false) :
@@ -50,8 +50,6 @@ private data class Hand(private val repString: String, val bid: Int, val jAsJoke
     private val type: HandType
 
     init {
-        val map = mutableMapOf<Card, Int>()
-
         cards = repString.map {
             val card = when (it) {
                 '2' -> Card.N2
@@ -63,66 +61,60 @@ private data class Hand(private val repString: String, val bid: Int, val jAsJoke
                 '8' -> Card.N8
                 '9' -> Card.N9
                 'T' -> Card.N10
-                'J' -> if (jAsJoker) Card.J0 else Card.J
+                'J' -> if (jAsJoker) Card.Joker else Card.J
                 'Q' -> Card.Q
                 'K' -> Card.K
                 'A' -> Card.A
                 else -> Card.None
             }
-            map[card] = map[card]?.plus(1) ?: 1
             card
         }
 
-        val wildCount = map[Card.J0] ?: 0
+        val wildCount = cards.count { it == Card.Joker }
+        val counts = cards.filterNot { it == Card.Joker }.groupingBy { it }.eachCount().values
+
+        val baseStrength = when {
+            5 in counts -> HandType.FiveOfKind
+            4 in counts -> HandType.FourOfKind
+            3 in counts && 2 in counts -> HandType.FullHouse
+            3 in counts -> HandType.ThreeOfKind
+            counts.count { it == 2 } == 2 -> HandType.TwoPair
+            counts.count { it == 2 } == 1 -> HandType.OnePair
+            else -> HandType.HighCard
+        }
 
         type = when (wildCount) {
-            0 -> when {
-                map.any { it.value == 5 } -> HandType.FiveOfKind
-                map.any { it.value == 4 } -> HandType.FourOfKind
-                map.count { it.value == 3 } == 1 && map.count { it.value == 2 } == 1 -> HandType.FullHouse
-                map.count { it.value == 3 } == 1 -> HandType.ThreeOfKind
-                map.count { it.value == 2 } == 2 -> HandType.TwoPair
-                map.count { it.value == 2 } == 1 -> HandType.OnePair
-                else -> HandType.HighCard
-            }
-
-            1 -> when {
-                map.any { it.value == 4 } -> HandType.FiveOfKind
-                map.any { it.value == 3 } -> HandType.FourOfKind
-                map.count { it.value == 2 } == 2 -> HandType.FullHouse
-                map.count { it.value == 2 } == 1 -> HandType.ThreeOfKind
+            1 -> when (baseStrength) {
+                HandType.FourOfKind -> HandType.FiveOfKind
+                HandType.ThreeOfKind -> HandType.FourOfKind
+                HandType.TwoPair -> HandType.FullHouse
+                HandType.OnePair -> HandType.ThreeOfKind
                 else -> HandType.OnePair
             }
 
-            2 -> when {
-                map.any { it.value == 3 } -> HandType.FiveOfKind
-                map.any { it.key != Card.J0 && it.value == 2 } -> HandType.FourOfKind
+            2 -> when (baseStrength) {
+                HandType.ThreeOfKind -> HandType.FiveOfKind
+                HandType.OnePair -> HandType.FourOfKind
                 else -> HandType.ThreeOfKind
             }
 
-            3 -> when {
-                map.any { it.value == 2 } -> HandType.FiveOfKind
+            3 -> when (baseStrength) {
+                HandType.OnePair -> HandType.FiveOfKind
                 else -> HandType.FourOfKind
             }
 
             4 -> HandType.FiveOfKind
             5 -> HandType.FiveOfKind
-            else -> HandType.HighCard // Can't reach
+            else -> baseStrength
         }
-
-        println("$repString, $type")
     }
 
     override fun compareTo(other: Hand): Int {
-        if (type > other.type) return 1
-        else if (this.type < other.type) return -1
-        else {
-            for ((index, card) in cards.withIndex()) {
-                return if (card > other.cards[index]) 1
-                else if (card < other.cards[index]) -1
-                else continue
-            }
-            return 0
+        val typeComparison = type.compareTo(other.type)
+
+        return if (typeComparison != 0) typeComparison else {
+            val differentPair = cards.zip(other.cards).firstOrNull { it.first != it.second }
+            differentPair?.first?.compareTo(differentPair.second) ?: 0
         }
     }
 }
