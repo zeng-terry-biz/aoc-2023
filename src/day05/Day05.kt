@@ -1,5 +1,9 @@
 package day05
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
 import println
 import readInput
 
@@ -18,7 +22,7 @@ class Part1(input: List<String>) {
     private val gardnerMaps = parseMaps(input.subList(2, input.size))
 
     fun solve(): Long {
-        return seeds.minOfOrNull { it.seedToLocation(gardnerMaps) } ?: -1
+        return seeds.minOf { it.seedToLocation(gardnerMaps) }
     }
 
     private fun parseSeeds(line: String): List<Long> {
@@ -32,22 +36,24 @@ class Part2(input: List<String>) {
     private val gardnerMaps = parseMaps(input.subList(2, input.size))
 
     fun solve(): Long {
-        return seedRanges.minOfOrNull {
-            var min = Long.MAX_VALUE
+        // Using coroutines reduces run time from 9 mins to 4 mins
+        return runBlocking(Dispatchers.Default) {
+            val rangeRunResults = seedRanges.map {
+                async {
+                    (it.first..<it.first + it.second).minOf { seed -> seed.seedToLocation(gardnerMaps) }
+                }
+            }.awaitAll()
 
-            for (n in it.first..<it.first + it.second) {
-                min = min.coerceAtMost(n.seedToLocation(gardnerMaps))
-            }
-            min
-        } ?: -1
+            rangeRunResults.min()
+        }
     }
 
     private fun parseSeedRanges(line: String): List<Pair<Long, Long>> {
         val cleanLine = line.dropWhile { it != ':' }.removePrefix(": ")
 
         return cleanLine.split(' ').map { it.toLong() }
-            .chunked(2).filter { it.size == 2 }
-            .map { Pair(it[0], it[1]) }
+                .chunked(2).filter { it.size == 2 }
+                .map { Pair(it[0], it[1]) }
     }
 }
 
