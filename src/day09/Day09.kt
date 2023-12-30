@@ -29,21 +29,9 @@ class Part2(private val input: List<String>) {
     }
 }
 
-private class Processor(private val initial: List<Int>) {
-    val dissections: List<List<Int>> = buildList {
-
-        var current = initial
-
-        while (current.any { it != 0 }) {
-            this.add(current)
-
-            current = buildList {
-                for ((index, n) in current.withIndex()) {
-                    if (index > 0) this.add(n - current[index - 1])
-                }
-            }
-        }
-    }
+private class Processor(initial: List<Int>) {
+    val dissections: Sequence<List<Int>> = generateSequence(initial) { s -> s.zipWithNext { a, b -> b - a } }
+            .takeWhile { s -> s.any { it != 0 } }
 
     fun nextValue(): Int = dissections.sumOf { it.last() }
 
